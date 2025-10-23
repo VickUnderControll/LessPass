@@ -1,3 +1,4 @@
+<!-- src/main/resources/templates/welcome.html -->
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" lang="es">
 <head>
@@ -82,20 +83,30 @@
         label { display:block; font-size:.85rem; margin-bottom:.35rem; color:#555; }
         input[type="text"], input[type="password"], input[type="url"] { width:100%; padding:.6rem; border-radius:8px; border:1px solid #ddd; box-sizing:border-box; }
 
-        /* Estilos para campo con ojo */
-        .pw-field { position:relative; }
-        .pw-field input { padding-right:40px; }
-        .pw-toggle-btn {
-            position:absolute;
-            right:6px;
-            top:50%;
-            transform:translateY(-50%);
-            border:0;
-            background:transparent;
-            padding:6px;
+        /* Estilos para campo con ojo y generador */
+        .pw-field { display:flex; gap:.4rem; align-items:center; }
+        .pw-field input { flex:1; padding: .56rem .6rem; border-radius:8px; border:1px solid #ddd; box-sizing:border-box; }
+        .pw-gen-btn {
             display:inline-flex;
             align-items:center;
             justify-content:center;
+            padding:.44rem .7rem;
+            min-height:36px;
+            font-weight:600;
+            font-size:.9rem;
+            border-radius:8px;
+            border:1px solid transparent;
+            background:transparent;
+            color:#667eea;
+            cursor:pointer;
+        }
+        .pw-toggle-btn {
+            display:inline-flex;
+            align-items:center;
+            justify-content:center;
+            border:0;
+            background:transparent;
+            padding:.4rem;
             cursor:pointer;
             border-radius:6px;
             color:#667eea;
@@ -109,6 +120,7 @@
             .actions { gap: .4rem; }
             .btn { font-size: .9rem; padding: .48rem .7rem; min-height: 32px; }
             .pw-toggle-btn, .modal .close { height: 32px; }
+            .pw-gen-btn { padding:.36rem .5rem; font-size:.85rem; min-height:32px; }
         }
     </style>
 </head>
@@ -168,6 +180,7 @@
                 <label for="contrasena">Contraseña</label>
                 <div class="pw-field">
                     <input type="password" id="contrasena" name="contrasena" required class="pw-input" />
+                    <button type="button" class="pw-gen-btn btn ghost" aria-label="Generar contraseña" title="Generar contraseña recomendada">Generar</button>
                     <button type="button" class="pw-toggle-btn" aria-pressed="false" aria-label="Mostrar contraseña" title="Mostrar / ocultar contraseña">
                         <svg class="eye-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z" stroke="#667eea" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
@@ -262,11 +275,42 @@
             });
         });
 
-        // Toggle ojo/mostrar contraseña
+        // Generador de contraseña segura
+        function generatePassword(minLen, maxLen) {
+            const upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+            const lower = "abcdefghijklmnopqrstuvwxyz";
+            const digits = "0123456789";
+            const special = "!@#$%^&*()-_=+[]{};:,.<>/?";
+            const all = upper + lower + digits + special;
+
+            const randChoice = (str) => str[Math.floor(Math.random() * str.length)];
+            const len = Math.floor(Math.random() * (maxLen - minLen + 1)) + minLen;
+
+            let arr = [];
+            // Garantizar al menos uno de cada tipo
+            arr.push(randChoice(upper));
+            arr.push(randChoice(lower));
+            arr.push(randChoice(digits));
+            arr.push(randChoice(special));
+
+            for (let i = arr.length; i < len; i++) {
+                arr.push(randChoice(all));
+            }
+            // Mezclar (Fisher-Yates)
+            for (let i = arr.length -1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr.join('');
+        }
+
+        // Toggle ojo/mostrar contraseña + vincular generador
         document.querySelectorAll('.pw-field').forEach(function(container) {
             const input = container.querySelector('input[type="password"], input[type="text"]');
             const btn = container.querySelector('.pw-toggle-btn');
+            const genBtn = container.querySelector('.pw-gen-btn');
             if (!input || !btn) return;
+
             btn.addEventListener('click', function() {
                 const isPwd = input.type === 'password';
                 input.type = isPwd ? 'text' : 'password';
@@ -279,6 +323,14 @@
                 }
                 btn.setAttribute('aria-label', isPwd ? 'Ocultar contraseña' : 'Mostrar contraseña');
             });
+
+            if (genBtn) {
+                genBtn.addEventListener('click', function() {
+                    const pwd = generatePassword(10, 15);
+                    input.value = pwd;
+                    // opcional: mostrar durante breve tiempo (no obligatorio)
+                });
+            }
         });
     })();
 </script>
