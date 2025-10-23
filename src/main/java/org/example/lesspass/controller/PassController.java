@@ -1,9 +1,11 @@
+// java
 package org.example.lesspass.controller;
 
 import org.example.lesspass.model.Pass;
 import org.example.lesspass.model.User;
 import org.example.lesspass.repository.PassRepository;
 import org.example.lesspass.repository.UserRepository;
+import org.example.lesspass.service.EncryptionService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -19,13 +21,16 @@ public class PassController {
 
     private final PassRepository passRepository;
     private final UserRepository userRepository;
+    private final EncryptionService encryptionService;
 
-    public PassController(PassRepository passRepository, UserRepository userRepository) {
+    public PassController(PassRepository passRepository,
+                          UserRepository userRepository,
+                          EncryptionService encryptionService) {
         this.passRepository = passRepository;
         this.userRepository = userRepository;
+        this.encryptionService = encryptionService;
     }
 
-    // Crear entrada (form POST desde el modal)
     @PostMapping("/add")
     @Transactional
     public String addPass(@RequestParam String url,
@@ -36,7 +41,7 @@ public class PassController {
         String username = principal.getName();
         Optional<User> ou = userRepository.findByUsername(username);
         if (ou.isEmpty()) {
-            return "redirect:/?error"; // usuario no encontrado
+            return "redirect:/?error";
         }
 
         User user = ou.get();
@@ -44,13 +49,12 @@ public class PassController {
         p.setUser(user);
         p.setUrl(url);
         p.setUsuario(usuario);
-        p.setContrasena(contrasena);
+        p.setContrasena(encryptionService.encrypt(contrasena));
         passRepository.save(p);
 
-        return "redirect:/"; // ajusta si tu home es /welcome
+        return "redirect:/";
     }
 
-    // Borrar entrada (form POST desde el modal de confirmación)
     @PostMapping("/delete")
     @Transactional
     public String deletePass(@RequestParam Long id, Principal principal) {
@@ -66,7 +70,6 @@ public class PassController {
         return "redirect:/";
     }
 
-    // Revelar contraseña (AJAX GET). Devuelve 200 con la contraseña si eres el dueño, 403 si no.
     @GetMapping("/{id}/reveal")
     @ResponseBody
     public ResponseEntity<String> reveal(@PathVariable Long id, Principal principal) {
@@ -78,6 +81,12 @@ public class PassController {
         if (!p.getUser().getUsername().equals(principal.getName())) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Forbidden");
         }
-        return ResponseEntity.ok(p.getContrasena());
+        String plain;
+        try {
+            plain = encryptionService.decrypt(p.getContrasena());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al desencriptar");
+        }
+        return ResponseEntity.ok(plain);
     }
 }
