@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <title>Bienvenido</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+        /* Layout */
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg,#667eea,#764ba2); min-height:100vh; margin:0; padding:2.5rem; color:#333; }
+        .container { max-width:1100px; margin:0 auto; background:rgba(255,255,255,0.95); border-radius:16px; padding:1.5rem; box-shadow:0 12px 30px rgba(0,0,0,0.15); }
+        header { display:flex; justify-content:space-between; align-items:center; gap:1rem; margin-bottom:1rem; }
+        h1 { margin:0; font-size:1.4rem; color:#222; }
+        .actions { display:flex; gap:.6rem; align-items:center; }
+
+        /* Botones unificados */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: .5rem;
+            padding: .56rem .95rem;
+            min-height: 36px;
+            line-height: 1;
+            font-weight: 600;
+            font-size: .95rem;
+            border-radius: 10px;
+            border: 1px solid transparent;
+            cursor: pointer;
+            box-sizing: border-box;
+            text-decoration: none;
+            transition: background .12s ease, border-color .12s ease, color .12s ease, transform .06s ease;
+            background: #667eea;
+            color: #fff;
+        }
+        .btn:hover { transform: translateY(-1px); }
+
+        .btn.ghost {
+            background: transparent;
+            color: #667eea;
+            border-color: #667eea;
+        }
+        .btn.danger {
+            background: #e05656;
+            color: #fff;
+            border-color: #e05656;
+        }
+
+        /* Forzar consistencia en contenedores */
+        .actions .btn,
+        .actions form .btn,
+        .card .card-actions .btn,
+        .modal .btn,
+        .modal .close {
+            padding: .56rem .95rem;
+            min-height: 36px;
+            font-size: .95rem;
+            border-radius: 10px;
+        }
+
+        /* Formularios dentro de acciones */
+        .actions form { display: inline-flex; align-items: center; margin: 0; }
+
+        /* Tarjetas */
+        .grid { display:grid; grid-template-columns:repeat(3, 1fr); gap:1rem; }
+        @media (max-width:900px) { .grid { grid-template-columns:repeat(2,1fr); } }
+        @media (max-width:600px) { .grid { grid-template-columns:1fr; } }
+
+        .card { background:#fff; border-radius:12px; padding:1rem; box-shadow:0 6px 18px rgba(0,0,0,0.06); display:flex; flex-direction:column; gap:.6rem; }
+        .card h3 { margin:0; font-size:1rem; color:#333; word-break:break-all; }
+        .meta { font-size:.9rem; color:#666; display:flex; justify-content:space-between; align-items:center; gap:.5rem; }
+        .meta span { display:inline-block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:60%; }
+        .card .card-actions { margin-top:auto; display:flex; gap:.5rem; justify-content:flex-end; }
+
+        /* Modales */
+        .modal-backdrop { position:fixed; inset:0; background:rgba(0,0,0,0.45); display:flex; align-items:center; justify-content:center; z-index:50; opacity:0; pointer-events:none; transition:opacity .15s ease; }
+        .modal { background:white; padding:1.25rem 1.5rem; border-radius:12px; width:360px; box-shadow:0 10px 30px rgba(0,0,0,0.25); text-align:left; }
+        .modal h3 { margin:0 0 .5rem 0; color:#333; }
+        .modal p { margin:0 0 .75rem 0; color:#444; }
+        .modal .close { display:inline-flex; align-items:center; justify-content:center; border:0; background:#f3f6ff; color:#333; border-radius:8px; cursor:pointer; padding:.35rem .6rem; }
+        .modal-backdrop.show { opacity:1; pointer-events:auto; }
+
+        label { display:block; font-size:.85rem; margin-bottom:.35rem; color:#555; }
+        input[type="text"], input[type="password"], input[type="url"] { width:100%; padding:.6rem; border-radius:8px; border:1px solid #ddd; box-sizing:border-box; }
+
+        /* Estilos para campo con ojo */
+        .pw-field { position:relative; }
+        .pw-field input { padding-right:40px; }
+        .pw-toggle-btn {
+            position:absolute;
+            right:6px;
+            top:50%;
+            transform:translateY(-50%);
+            border:0;
+            background:transparent;
+            padding:6px;
+            display:inline-flex;
+            align-items:center;
+            justify-content:center;
+            cursor:pointer;
+            border-radius:6px;
+            color:#667eea;
+        }
+        .pw-toggle-btn svg { width:20px; height:20px; display:block; pointer-events:none; }
+
+        .row { display:flex; gap:.5rem; }
+
+        /* Responsive */
+        @media (max-width: 480px) {
+            .actions { gap: .4rem; }
+            .btn { font-size: .9rem; padding: .48rem .7rem; min-height: 32px; }
+            .pw-toggle-btn, .modal .close { height: 32px; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <header>
+        <h1>Bienvenido <span th:text="${username}">Usuario</span></h1>
+        <div class="actions">
+            <button class="btn" id="btnAdd">Añadir entrada</button>
+            <form th:action="@{/logout}" method="post">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                <button type="submit" class="btn ghost">Cerrar sesión</button>
+            </form>
+        </div>
+    </header>
+
+    <h2 style="margin-top:0;margin-bottom:.5rem;color:#444;">Tus entradas</h2>
+
+    <div class="grid">
+        <div th:each="p : ${passes}" class="card">
+            <h3 th:text="${p.url}">-</h3>
+            <div class="meta">
+                <span th:text="${p.usuario}">usuario</span>
+                <span th:text="${#strings.length(p.contrasena) > 0 ? '••••••' : ''}"></span>
+            </div>
+            <div class="card-actions">
+                <button class="btn ghost" type="button" th:onclick="|showReveal(${p.id})|">Mostrar</button>
+
+                <form th:action="@{/pass/delete}" method="post" th:id="'delForm_'+${p.id}" style="display:inline;">
+                    <input type="hidden" name="id" th:value="${p.id}" />
+                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                    <button type="button" class="btn danger" th:attr="data-url=${p.url}" th:onclick="|confirmDelete(${p.id})|">Borrar</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div th:if="${#lists.isEmpty(passes)}" style="margin-top:1rem;color:#666;">
+        No hay entradas para tu cuenta.
+    </div>
+</div>
+
+<div id="modalAdd" class="modal-backdrop" role="dialog" aria-hidden="true">
+    <div class="modal" role="document">
+        <h3>Añadir entrada</h3>
+        <form th:action="@{/pass/add}" method="post" id="addForm">
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+            <div style="margin-bottom:.6rem;">
+                <label for="url">URL</label>
+                <input type="url" id="url" name="url" placeholder="https://..." required />
+            </div>
+            <div style="margin-bottom:.6rem;">
+                <label for="usuario">Usuario</label>
+                <input type="text" id="usuario" name="usuario" required />
+            </div>
+            <div style="margin-bottom:.8rem;">
+                <label for="contrasena">Contraseña</label>
+                <div class="pw-field">
+                    <input type="password" id="contrasena" name="contrasena" required class="pw-input" />
+                    <button type="button" class="pw-toggle-btn" aria-pressed="false" aria-label="Mostrar contraseña" title="Mostrar / ocultar contraseña">
+                        <svg class="eye-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z" stroke="#667eea" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+                            <circle cx="12" cy="12" r="3" stroke="#667eea" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        <svg class="eye-off-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:none;">
+                            <path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7 .98-1.77 2.3-3.28 3.88-4.42" stroke="#667eea" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M1 1l22 22" stroke="#667eea" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <div style="text-align:right;">
+                <button type="button" class="close" id="addCancel">Cancelar</button>
+                <button type="submit" class="btn">Crear</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="modalConfirm" class="modal-backdrop" role="dialog" aria-hidden="true">
+    <div class="modal" role="document">
+        <h3>Confirmar borrado</h3>
+        <p id="confirmMsg">¿Seguro que quieres borrar esta entrada?</p>
+        <div style="text-align:right;">
+            <button type="button" class="close" id="confirmCancel">Cancelar</button>
+            <button type="button" class="btn danger" id="confirmDeleteBtn">Borrar</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function() {
+        const btnAdd = document.getElementById('btnAdd');
+        const modalAdd = document.getElementById('modalAdd');
+        const modalConfirm = document.getElementById('modalConfirm');
+        const addCancel = document.getElementById('addCancel');
+        const confirmCancel = document.getElementById('confirmCancel');
+        const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+        let formToSubmit = null;
+
+        function openModal(modal) {
+            modal.classList.add('show');
+            modal.setAttribute('aria-hidden','false');
+        }
+        function closeModal(modal) {
+            modal.classList.remove('show');
+            modal.setAttribute('aria-hidden','true');
+            if (window.history && window.history.replaceState) {
+                const url = new URL(window.location);
+                url.search = '';
+                window.history.replaceState({}, document.title, url.toString());
+            }
+        }
+
+        btnAdd.addEventListener('click', function() { openModal(modalAdd); });
+        addCancel.addEventListener('click', function() { closeModal(modalAdd); });
+        confirmCancel.addEventListener('click', function() { formToSubmit = null; closeModal(modalConfirm); });
+
+        window.confirmDelete = function(id) {
+            const form = document.getElementById('delForm_' + id);
+            const btn = form ? form.querySelector('[data-url]') : null;
+            const url = btn ? btn.dataset.url : '';
+            const msg = document.getElementById('confirmMsg');
+            msg.textContent = "¿Borrar entrada: " + url + " ? Esta acción no se puede deshacer.";
+            formToSubmit = form;
+            openModal(modalConfirm);
+        };
+
+        window.showReveal = function(id) {
+            fetch('/pass/' + id + '/reveal', { credentials: 'same-origin' })
+                .then(response => {
+                    if (response.ok) return response.text();
+                    if (response.status === 403) throw new Error('No autorizado para ver esta contraseña');
+                    throw new Error('Error al obtener la contraseña');
+                })
+                .then(text => {
+                    alert('Contraseña: ' + text);
+                })
+                .catch(err => {
+                    alert(err.message);
+                });
+        };
+
+        confirmDeleteBtn.addEventListener('click', function() {
+            if (formToSubmit) formToSubmit.submit();
+        });
+
+        document.querySelectorAll('.modal-backdrop').forEach(function(backdrop) {
+            backdrop.addEventListener('click', function(e) {
+                if (e.target === backdrop) closeModal(backdrop);
+            });
+        });
+
+        // Toggle ojo/mostrar contraseña
+        document.querySelectorAll('.pw-field').forEach(function(container) {
+            const input = container.querySelector('input[type="password"], input[type="text"]');
+            const btn = container.querySelector('.pw-toggle-btn');
+            if (!input || !btn) return;
+            btn.addEventListener('click', function() {
+                const isPwd = input.type === 'password';
+                input.type = isPwd ? 'text' : 'password';
+                btn.setAttribute('aria-pressed', String(isPwd));
+                const eye = btn.querySelector('.eye-icon');
+                const eyeOff = btn.querySelector('.eye-off-icon');
+                if (eye && eyeOff) {
+                    eye.style.display = isPwd ? 'none' : 'block';
+                    eyeOff.style.display = isPwd ? 'block' : 'none';
+                }
+                btn.setAttribute('aria-label', isPwd ? 'Ocultar contraseña' : 'Mostrar contraseña');
+            });
+        });
+    })();
+</script>
+</body>
+</html>
